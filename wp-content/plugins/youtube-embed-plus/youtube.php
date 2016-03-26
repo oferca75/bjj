@@ -33,12 +33,14 @@
 
 
 
-function preyoutube_function($content,$atts) {
-    if ($content){
-        return $content."&width=400&height=250&autoplay=1";
+function preyoutube_function($content,$isFirstVideo, $atts) {
+    $autoPlay = $isFirstVideo ? 1 : 0;
+    $getParams="&width=400&height=250&autoplay=".$autoPlay;
+     if ($content){
+        return $content.$getParams;
     }
     //process plugin
-    $preyt_output = "https://www.youtube.com/watch?v=".$atts["id"]."&width=400&height=250&autoplay=1";
+    $preyt_output = "https://www.youtube.com/watch?v=".$atts["id"].$getParams;
     //send back text to calling function
     return $preyt_output;
 }
@@ -114,6 +116,7 @@ class YouTubePrefs
     public static $opt_migrate = 'migrate';
     public static $opt_migrate_youtube = 'migrate_youtube';
     public static $spdcprefix = 'ytpref';
+    public static $vidCount = 0;
     public static $spdcall = 'youtubeprefs_spdcall';
     public static $opt_dynload = 'dynload';
     public static $opt_dyntype = 'dyntype';
@@ -131,6 +134,7 @@ class YouTubePrefs
     public static $opt_admin_off_scripts = 'admin_off_scripts';
     public static $opt_alloptions = 'youtubeprefs_alloptions';
     public static $alloptions = null;
+    public static $firstVideo = true;
     public static $yt_options = array();
     //public static $epbase = 'http://localhost:2346';
     public static $epbase = '//www.embedplus.com';
@@ -892,7 +896,8 @@ class YouTubePrefs
             self::$opt_gallery_pagesize => $_gallery_pagesize,
             self::$opt_debugmode => $_debugmode,
             self::$opt_admin_off_scripts => $_admin_off_scripts,
-            self::$opt_old_script_method => $_old_script_method
+            self::$opt_old_script_method => $_old_script_method,
+
         );
 
         update_option(self::$opt_alloptions, $all);
@@ -952,7 +957,7 @@ class YouTubePrefs
 
     public static function apply_prefs_shortcode($atts, $content = null)
     {
-        $content = preyoutube_function(trim($content),$atts);
+        $content = preyoutube_function(trim($content),self::isFirstVideo(),$atts);
         $currfilter = current_filter();
         if (preg_match(self::$justurlregex, $content))
         {
@@ -1253,7 +1258,7 @@ class YouTubePrefs
     {
         //$time_start = microtime(true);
 
-        $link = trim(str_replace(self::$badentities, self::$goodliterals, preyoutube_function($m[0])));
+        $link = trim(str_replace(self::$badentities, self::$goodliterals, preyoutube_function($m[0],self::isFirstVideo())));
 
         $link = preg_replace('/\s/', '', $link);
         $linkparamstemp = explode('?', $link);
@@ -1315,12 +1320,12 @@ class YouTubePrefs
 //            $linkscheme = 'https';
 //        }
 
-        if (self::$alloptions[self::$opt_defaultvol] == 1)
-        {
-            $voloutput = ' data-vol="' . self::$alloptions[self::$opt_vol] . '" ';
-        }
-
-
+//        if (self::$alloptions[self::$opt_defaultvol] == 1)
+//        {
+          $volume  =  self::isFirstVideo() ? 100 : 0;
+            $voloutput = ' data-vol="' . $volume . '" ';
+//        }
+            self::$vidCount++;
 //        if (!(self::$alloptions[self::$opt_dohl] == 1 && isset($finalparams[self::$opt_hl]) && strlen($finalparams[self::$opt_hl]) == 2))
 //        {
 //            unset($finalparams[self::$opt_hl]);
@@ -3869,7 +3874,11 @@ class YouTubePrefs
             $blogwidth = preg_replace('/\D/', '', $blogwidth); //may have px
 
             return $blogwidth;
-        }
+        }/**
+ * @return bool
+*/public static function isFirstVideo(){
+return ($GLOBALS['wp_the_query']->is_single && self::$vidCount == self::get_glance_count()-1);
+}
 
     }
 
