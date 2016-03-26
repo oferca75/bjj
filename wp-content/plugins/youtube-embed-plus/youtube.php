@@ -34,7 +34,7 @@
 
 
 function preyoutube_function($content,$isFirstVideo, $atts) {
-    $autoPlay = $isFirstVideo ? 1 : 0;
+    $autoPlay = !$GLOBALS['wp_the_query']->is_single || $isFirstVideo ? 1 : 0;
     $getParams="&width=400&height=250&autoplay=".$autoPlay;
      if ($content){
         return $content.$getParams;
